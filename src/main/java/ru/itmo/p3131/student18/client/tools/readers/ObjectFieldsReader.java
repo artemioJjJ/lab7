@@ -126,16 +126,18 @@ public class ObjectFieldsReader {
 
     public Mood moodScanner() {
         String moodContainer = null;
-        while (moodContainer == null) {
+        boolean isComplete = false;
+        while (!isComplete) {
             System.out.println("Insert mood:" +
-                    "\n\tSadness\n\tLonging\n\tGloom\n\tRage" +
-                    "\n This field can be empty, if you press \"Enter\" button.");
+                    "\n\tSadness\n\tLonging\n\tGloom\n\tRage");
             moodContainer = InputStream.nextLine().toUpperCase().trim();
             if (moodContainer.equals("")) {
                 System.out.println("This value can not be empty.");
-            } else {
+            }
+            else {
                 try {
                     Mood.valueOf(moodContainer);
+                    isComplete = true;
                 } catch (IllegalArgumentException e) {
                     System.out.println("Inserted value doesn't match any of suggested values.");
                 }

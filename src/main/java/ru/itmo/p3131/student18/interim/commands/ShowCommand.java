@@ -21,12 +21,7 @@ public class ShowCommand implements Command, Serializable {
 
     @Override
     public void execute(String[] params, String user, HumanBeing human) {
-        try {
-            manager.init(new CollectionLoader(statementControl.collectionInit()).execute());
-            manager.show();
-        } catch (SQLException e) {
-            Server.printErr("FAil.");
-        } catch (ObjectFieldsValueException e) {}
+        manager.show();
     }
 
     @Override

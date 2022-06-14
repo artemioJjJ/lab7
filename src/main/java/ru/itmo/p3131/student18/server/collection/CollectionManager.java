@@ -2,7 +2,6 @@ package ru.itmo.p3131.student18.server.collection;
 
 import ru.itmo.p3131.student18.interim.objectclasses.HumanBeing;
 import ru.itmo.p3131.student18.server.Server;
-import ru.itmo.p3131.student18.server.exeptions.NumberValueException;
 import ru.itmo.p3131.student18.server.exeptions.ObjectFieldsValueException;
 
 import java.sql.SQLException;
@@ -17,13 +16,12 @@ public class CollectionManager {
     private final Stack<HumanBeing> stack= new Stack<>();;
     private final LocalDateTime initTime = LocalDateTime.now();
 
-    public CollectionManager(CollectionLoader collectionLoader) throws ObjectFieldsValueException, SQLException {
-        init(collectionLoader.execute());
+    public CollectionManager()  {
     }
 
     //Managing and init methods:
-    public void init(Stack<HumanBeing> tmpStack) {
-        stack.addAll(tmpStack);
+    public void init(CollectionLoader collectionLoader) throws ObjectFieldsValueException, SQLException {
+        stack.addAll(collectionLoader.execute());
         Collections.sort(stack);
         updateBiggestId();
     }

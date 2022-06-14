@@ -25,7 +25,6 @@ public class Server {
     private ServerCommandReader commandReader;
     private final StatementControl statementController = new StatementControl();
     private final ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
-    private final ForkJoinPool forkJoinPool = new ForkJoinPool();
 
     static String errMessage = "";
     static String defMessage = "";
@@ -38,27 +37,27 @@ public class Server {
         defMessage = defMessage + "\n" + message;
     }
 
-    String writeErr() {
+    public static String writeErr() {
         String mes = errMessage;
         errMessage = "";
         return mes;
     }
 
-    String writeDef() {
+    public static String writeDef() {
         String mes = defMessage;
         defMessage = "";
         return mes;
     }
 
     private Server(int port) {
-        this.receiver = new Receiver(port);
+        collectionManager = new CollectionManager();
+        commandManager = new CommandManager(collectionManager, statementController);
+        commandReader = new ServerCommandReader(commandManager);
+        receiver = new Receiver(port, commandReader);
         try {
             statementController.startConnection(properties.getUrl(), properties.getAdmin(), properties.getPassword());
-            CollectionLoader collectionLoader = new CollectionLoader(statementController.collectionInit());
-            collectionManager = new CollectionManager(collectionLoader);
+            collectionManager.init(new CollectionLoader(statementController.collectionInit()));
             System.out.println("Collection successfully initialized");
-            commandManager = new CommandManager(collectionManager, statementController);
-            commandReader = new ServerCommandReader(commandManager);
         } catch (ObjectFieldsValueException | SQLException e) {
             System.out.println(e.getMessage());
             System.exit(1);
@@ -73,23 +72,12 @@ public class Server {
         Server server = new Server(9000);
         while (true) {
             try {
-                synchronized (server.receiver) {
-                    server.receiver.receive();
-                }
-            Future<ClientMessage> clientMessageFuture = server.cachedThreadPool.submit(() -> server.receiver.receive());
-            ClientMessage message = clientMessageFuture.get();
-            server.forkJoinPool.execute(() -> {
-                try {
-                    server.commandReader.startScanning(message.getCommandName(), message.getCommandArgs(), message.getUser(), message.getObject());
-                } catch (CommandScannerException e) {
-                    e.printStackTrace();
-                }
-                new Thread(() -> server.receiver.send(new ServerMessage(server.writeDef(), server.writeErr()))).start();
-            });
-            } catch (InterruptedException | ExecutionException | IOException e) {
-                e.printStackTrace();
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+
             }
-        }
+                server.cachedThreadPool.execute(server.receiver);
+            }
     }
 }
 

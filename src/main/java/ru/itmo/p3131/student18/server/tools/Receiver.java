@@ -2,6 +2,8 @@ package ru.itmo.p3131.student18.server.tools;
 
 import ru.itmo.p3131.student18.interim.messages.ClientMessage;
 import ru.itmo.p3131.student18.interim.messages.ServerMessage;
+import ru.itmo.p3131.student18.server.Server;
+import ru.itmo.p3131.student18.server.exeptions.CommandScannerException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -12,10 +14,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class Receiver {
+public class Receiver  implements Runnable {
     private DatagramSocket serverSocket;
     private InetSocketAddress recentAddress;
+    private final ForkJoinPool forkJoinPool = new ForkJoinPool();
+    private ServerCommandReader serverCommandReader;
     private int oldPort = 0;
+
     public int getOldPort() {
         return oldPort;
     }
@@ -35,7 +40,8 @@ public class Receiver {
      * @param port - a port on a local host machine to be bound by socket.
      * @throws SocketException - if socket could not be opened, or the socket could not bind to the specified local port.
      */
-    public Receiver(int port) {
+    public Receiver(int port, ServerCommandReader serverCommandReader) {
+        this.serverCommandReader = serverCommandReader;
         try {
             this.serverSocket = new DatagramSocket(port);
             System.out.println("Server started. Port: " + port);
@@ -49,7 +55,7 @@ public class Receiver {
      *
      * @throws IOException if something is wrong with receiving the data from socket.
      */
-    public ClientMessage receive() throws IOException {
+    public void receive() throws IOException {
         byte[] message = new byte[8192];
         DatagramPacket pack = new DatagramPacket(message, message.length);
         serverSocket.receive(pack);
@@ -59,16 +65,25 @@ public class Receiver {
         byte[] data = pack.getData();
         try {
             ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(data));
-            ClientMessage obj = (ClientMessage) inputStream.readObject();
-            System.out.println("Received: " + obj.getCommandName() + " " + (Objects.equals(obj.getCommandArgs(),
-                    null) ? "" : " " + obj.getCommandArgs()[0]));
+            ClientMessage clientMessage = (ClientMessage) inputStream.readObject();
+            System.out.println("Received: " + clientMessage.getCommandName() + " " + (Objects.equals(clientMessage.getCommandArgs(),
+                    null) ? "" : " " + clientMessage.getCommandArgs()[0]));
             inputStream.close();
-            return obj;//
+            forkJoinPool.execute(() -> {
+                try {
+                    serverCommandReader.startScanning(clientMessage.getCommandName(), clientMessage.getCommandArgs(), clientMessage.getUser(), clientMessage.getObject());
+                    new Thread(() -> {
+                        send(new ServerMessage(Server.writeDef(), Server.writeErr()));
+                    }).start();
+                } catch (CommandScannerException e) {
+                    e.printStackTrace();
+                }
+
+            });
 
         } catch (ClassNotFoundException e) {
             System.out.println("Class exception");
         }
-        return null;
     }
 
     public void send(ServerMessage message) {
@@ -79,6 +94,14 @@ public class Receiver {
             serverSocket.send(notification);
         } catch (IOException e) {
             System.out.println("Failed to send server message.");
+        }
+    }
+
+    public void run() {
+        try {
+            receive();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

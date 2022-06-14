@@ -21,6 +21,7 @@ public class RegisterCommand implements Command {
             Server.printDef("User has successfully registered.");
         } catch (SQLException e) {
             Server.printErr("Failed to register a new user.");
+            System.out.println(e.getMessage());
         }
     }
     @Override

@@ -5,18 +5,19 @@ import ru.itmo.p3131.student18.interim.objectclasses.Mood;
 import ru.itmo.p3131.student18.interim.objectclasses.WeaponType;
 
 import java.sql.*;
+import java.util.ResourceBundle;
 
 public class StatementControl {
     private Connection connection;
     private final String COLLECTION_INIT = "SELECT * FROM \"human_beings\"";
-    private final String ADD_NEW_OBJECT = "insert into \"human_beings\" (_name, coordinates_x, coordinates_y, real_hero, has_toothpick, impact_speed, weapon_type, mood, car, \"user\") VALUES (?,?,?,?,?,?,?,?,?,?) ";
-    private final String REMOVE_OBJECT_BY_ID = "DELETE FROM \"human_beings\" WHERE id=? and user=?";
-    private final String REMOVE_FIRST = "DELETE FROM \"human_beings\" WHERE id=min(id) and user=?";
-    private final String REMOVE_LAST = "DELETE FROM \"human_beings\" WHERE id=max(id) and user=?";
-    private final String REMOVE_GREATER_THAN = "DELETE FROM \"human_beings\" WHERE id > ? and user=?";
-    private final String CLEAR_BY_USERNAME = "DELETE FROM \"human_beings\" WHERE user=?";
-    private final String UPDATE_BY_ID = "UPDATE \"human_beings\" SET _name=?,coordinates_x=?,coordinates_y=?,real_hero=?,has_toothpick=?,impact_speed=?,weapon_type=?,mood=?,car=? WHERE \"user\"=? and id=?";
-    private final String REGISTER_USER = "insert into \"users\" VALUES (?,?)";
+    private final String ADD_NEW_OBJECT = "insert into \"human_beings\" (_name, coordinates_x, coordinates_y, real_hero, has_toothpick, impact_speed, weapon_type, mood, car, user_id) VALUES (?,?,?,?,?,?,?,?,?,(select user_id from users where login = ?)) ";
+    private final String REMOVE_OBJECT_BY_ID = "DELETE FROM \"human_beings\" WHERE id=? and user_id= (select user_id from \"users\" where login=?)";
+    private final String REMOVE_FIRST = "DELETE FROM \"human_beings\" WHERE id=min(id) and user_id= (select user_id from \"users\" where login=?)";
+    private final String REMOVE_LAST = "DELETE FROM \"human_beings\" WHERE id=max(id) and user_id= (select user_id from \"users\" where login=?)";
+    private final String REMOVE_GREATER_THAN = "DELETE FROM \"human_beings\" WHERE id > ? and user_id= (select user_id from \"users\" where login=?)";
+    private final String CLEAR_BY_USERNAME = "DELETE FROM \"human_beings\" WHERE user_id = (SELECT user_id from \"users\" where login = ?)";
+    private final String UPDATE_BY_ID = "UPDATE \"human_beings\" SET _name=?,coordinates_x=?,coordinates_y=?,real_hero=?,has_toothpick=?,impact_speed=?,weapon_type=?,mood=?,car=? WHERE user_id=(select user_id from users where login = ?) and id=?";
+    private final String REGISTER_USER = "insert into \"users\" (login, password) VALUES (?,?)";
     private final String LOGIN_USER = "SELECT \"password\" FROM users WHERE login=?";
 
     public void startConnection(String url,String userName,String userPassword) throws SQLException {
@@ -56,7 +57,7 @@ public class StatementControl {
          ps.setString(10, user);
     }
     public void clearByUserName(String user) throws SQLException {
-        PreparedStatement ps = connection.prepareCall(CLEAR_BY_USERNAME);
+        PreparedStatement ps = connection.prepareStatement(CLEAR_BY_USERNAME);
         ps.setString(1, user);
         ps.execute();
         ps.close();

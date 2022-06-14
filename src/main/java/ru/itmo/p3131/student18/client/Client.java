@@ -53,7 +53,7 @@ public class Client {
                     commandSaver.setParams(new String[]{userAction.getInsertedLogin(), userAction.getInsertedEncryptedPassword()});
                 }
             }
-            if (userAction.getUser() == null && !"login".equalsIgnoreCase(commandSaver.getFoundCommand())) {
+            if (userAction.getUser() == null && (!"login".equalsIgnoreCase(commandSaver.getFoundCommand()) && !"register".equalsIgnoreCase(commandSaver.getFoundCommand()))) {
                 System.out.println("To get access to all commands you have to login.");
             }
             else break;
